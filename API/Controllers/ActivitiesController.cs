@@ -1,33 +1,46 @@
 using System;
+using Application.Activities.Commands;
+using Application.Activities.Queries;
 using Domain;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Persistence;
 
 namespace API.Controllers;
 
-public class ActivitiesController(AppDbContext context):BaseApiController
+public class ActivitiesController : BaseApiController
 {
     [HttpGet]
     public async Task<ActionResult<List<Activity>>> GetActivities()
     {
-        var activities = await context.Activities.ToListAsync();
-        return Ok(activities);
+
+        return await Mediator.Send(new GetActivityList.Query());
     }
     //Get activity by id
     [HttpGet("{id}")]
-    public async Task<ActionResult<Activity>> GetActivityDetails(string id)    
+    public async Task<ActionResult<Activity>> GetActivityDetails(string id)
     {
-        var activity = await context.Activities.FindAsync(id);
-        if (activity == null) return NotFound();
-        return Ok(activity);
+        return await Mediator.Send(new GetActivityDetails.Query { Id = id });
     }
     //Create a new activity
     [HttpPost]
-    public async Task<ActionResult> CreateActivity(Activity activity)
+    public async Task<ActionResult<String>> CreateActivity(Activity activity)
     {
-        await context.Activities.AddAsync(activity);
-        await context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetActivityDetails), new { id = activity.Id }, activity);
+        return await Mediator.Send(new CreateActivity.Command { Activity = activity });
+
+    }
+    //Edit an activity
+    [HttpPut("{id}")]
+    public async Task<IActionResult> EditActivity(string id, Activity activity)
+    {
+        activity.Id = id;
+        await Mediator.Send(new EditActivity.Command { Activity = activity });
+        return NoContent();
+    }
+    //Delete an activity
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteActivity(string id)
+    {
+        await Mediator.Send(new DeleteActivity.Command { Id = id });
+        return Ok();
     }
 }

@@ -1,32 +1,41 @@
-import { Box, Paper, TextField, Typography } from "@mui/material"
+import { Box, Button, Paper, TextField, Typography } from "@mui/material"
 import type { FormEvent } from "react";
+import { useActivities } from "../../lib/hooks/useActivities";
 type Props = {
   activity?: Activity;
   closeForm: () => void;
-  onSubmitActivity: (activity: Activity) => void;
 }
-function ActivityForm({ activity, closeForm, onSubmitActivity }: Props) {
+function ActivityForm({ activity, closeForm }: Props) {
+  const { updateActivity, createActivity } = useActivities();
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const data = Object.fromEntries(formData.entries());
-    
-    console.log(data);
-    const newActivity: Activity = {
-      id: activity?.id || '',
-      title: data.Title as string,
-      description: data.Description as string,
-      category: data.Category as string,
-      date: data.Date as string,
-      city: data.City as string,
-      venue: data.Venue as string,
-      isCancelled: false,
-      latitude: "",
-      longitude: ""
-    };
-    onSubmitActivity(newActivity);
-    // Here you can handle form submission, e.g., send data to the server
-    closeForm();
+    const data:{ [key: string]: FormDataEntryValue } = {};
+    formData.forEach((value, key) => {
+      data[key] = value;
+    });
+    if(activity){
+      data.id = activity.id;
+      updateActivity.mutateAsync(data as unknown as Activity);
+      closeForm();
+    }else{
+      console.log("Creating new activity", data);
+      const newActivity:Activity = {
+        id: crypto.randomUUID(),
+        title: data.Title as string,
+        description: data.Description as string,
+        category: data.Category as string,
+        date: new Date(data.Date as string).toISOString(), // ✅ DateTime compatible
+        city: data.City as string,
+        venue: data.Venue as string,
+        latitude: (data.Latitude ?? "0").toString(), // ✅ string
+        longitude: (data.Longitude ?? "0").toString(),
+        isCancelled: false
+      }
+      console.log(newActivity);
+      createActivity.mutateAsync(newActivity as unknown as Activity);
+      // closeForm();
+    }
     
   }
   return (
@@ -36,12 +45,20 @@ function ActivityForm({ activity, closeForm, onSubmitActivity }: Props) {
         <TextField name="Title" label="Title" defaultValue={activity?.title} />
         <TextField name="Description" label="Description" multiline rows={4} defaultValue={activity?.description} />
         <TextField name="Category" label="Category" defaultValue={activity?.category} />
-        <TextField name="Date" label="Date" type="date" defaultValue={activity?.date} />
+        <TextField name="Date" label="Date" type="date" slotProps={{
+    inputLabel: {
+      shrink: true,
+    },
+  }} defaultValue={activity?.date} />
         <TextField name="City" label="City" defaultValue={activity?.city} />
         <TextField name="Venue" label="Venue" defaultValue={activity?.venue} />
         <Box display="flex" justifyContent="flex-end" gap={2} mt={2}>
-            <button type="button" color="inherit" onClick={closeForm}>Cancel</button>
-            <button type="submit" color="primary">Submit</button>
+            <Button type="button" color="inherit" onClick={closeForm}>Cancel</Button>
+            <Button type="submit" 
+            color="success" 
+            variant="contained"
+            disabled={updateActivity.isPending || createActivity.isPending} 
+            >Submit</Button>
         </Box>
        </Box>
     </Paper>
@@ -49,3 +66,4 @@ function ActivityForm({ activity, closeForm, onSubmitActivity }: Props) {
 }
 
 export default ActivityForm
+

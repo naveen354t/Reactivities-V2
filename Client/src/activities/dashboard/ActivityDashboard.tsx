@@ -6,21 +6,18 @@ import ActivityForm from "../form/ActivityForm";
 type Props = {
   activities: Activity[];
   selectedActivity?: Activity | undefined;
-  onSelectActivity: (id: string) => void;
   onCancelSelectActivity: () => void;
   onFormOpen: (id?: string) => void;
   onFormClose: () => void;
-  editMode: boolean;
-  onSubmitActivity: (activity: Activity) => void;
-  onDeleteActivity: (id: string) => void;
+  editMode: boolean; 
 
 }
 
-function ActivityDashboard({ activities, selectedActivity, onSelectActivity, onCancelSelectActivity, onFormOpen, onFormClose, editMode, onSubmitActivity, onDeleteActivity }: Props) {
+function ActivityDashboard({ activities, selectedActivity, onCancelSelectActivity, onFormOpen, onFormClose, editMode}: Props) {
   return (
     <Grid container spacing={2}>
       <Grid size={7}>
-        <ActivityList activities={activities} onSelectActivity={onSelectActivity} onDeleteActivity={onDeleteActivity} />    
+        <ActivityList activities={activities} />  
       </Grid>
       <Grid size={5}>
        {selectedActivity && !editMode && <ActivityDetail activity={selectedActivity} 
@@ -29,7 +26,7 @@ function ActivityDashboard({ activities, selectedActivity, onSelectActivity, onC
        />} 
         {editMode &&    
        <ActivityForm closeForm={onFormClose} activity={selectedActivity}
-        onSubmitActivity={onSubmitActivity} />
+      />
         }
       </Grid>
     </Grid>

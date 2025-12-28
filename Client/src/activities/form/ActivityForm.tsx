@@ -1,13 +1,14 @@
 import { Box, Button, Paper, TextField, Typography } from "@mui/material"
 import type { FormEvent } from "react";
 import { useActivities } from "../../lib/hooks/useActivities";
-type Props = {
-  activity?: Activity;
-  closeForm: () => void;
-}
-function ActivityForm({ activity, closeForm }: Props) {
-  const { updateActivity, createActivity } = useActivities();
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+import { useNavigate, useParams } from "react-router";
+
+function ActivityForm() {
+  const {id}=useParams<{id:string}>();
+  const { updateActivity, createActivity, activity,isActivityLoading } = useActivities(id);
+  const navigate=useNavigate();
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const data:{ [key: string]: FormDataEntryValue } = {};
@@ -15,9 +16,10 @@ function ActivityForm({ activity, closeForm }: Props) {
       data[key] = value;
     });
     if(activity){
+      console.log("Updating activity", data);
       data.id = activity.id;
-      updateActivity.mutateAsync(data as unknown as Activity);
-      closeForm();
+      await updateActivity.mutateAsync(data as unknown as Activity);
+      navigate(`/activities/${activity.id}`);
     }else{
       console.log("Creating new activity", data);
       const newActivity:Activity = {
@@ -32,15 +34,19 @@ function ActivityForm({ activity, closeForm }: Props) {
         longitude: (data.Longitude ?? "0").toString(),
         isCancelled: false
       }
-      console.log(newActivity);
-      createActivity.mutateAsync(newActivity as unknown as Activity);
-      // closeForm();
+
+      createActivity.mutate(newActivity, {
+        onSuccess: (id) => navigate(`/activities/${id}`)
+      });
+      
     }
     
   }
+  if (isActivityLoading) return <Typography variant="h4" align="center" mt={5}>Loading activity...</Typography>;
+
   return (
     <Paper sx={{borderRadius:3, boxShadow:3, p:2}}>
-       <Typography variant="h4" color="primary" gutterBottom>Create Activity</Typography>
+       <Typography variant="h4" color="primary" gutterBottom>{activity ? "Edit Activity" : "Create Activity"}</Typography>
        <Box component="form" onSubmit={handleSubmit} display="flex" flexDirection="column" gap={2}>
         <TextField name="Title" label="Title" defaultValue={activity?.title} />
         <TextField name="Description" label="Description" multiline rows={4} defaultValue={activity?.description} />
@@ -53,7 +59,7 @@ function ActivityForm({ activity, closeForm }: Props) {
         <TextField name="City" label="City" defaultValue={activity?.city} />
         <TextField name="Venue" label="Venue" defaultValue={activity?.venue} />
         <Box display="flex" justifyContent="flex-end" gap={2} mt={2}>
-            <Button type="button" color="inherit" onClick={closeForm}>Cancel</Button>
+            <Button type="button" color="inherit" onClick={() => navigate('/activities')}>Cancel</Button>
             <Button type="submit" 
             color="success" 
             variant="contained"
